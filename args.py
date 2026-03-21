@@ -13,6 +13,20 @@ def get_args():
     )
 
     parser.add_argument(
+        "--num_classes", 
+        type=int, 
+        default=1, 
+        help="Number of object classes (including background)."
+    )
+
+    parser.add_argument(
+        "--image_size", 
+        type=int, 
+        default=512, 
+        help="Input image size (assumes square)."
+    )
+
+    parser.add_argument(
         "--csv_dir",
         type=str,
         default="./data/csvs",
@@ -40,7 +54,7 @@ def get_args():
         help="Directory for checkpoints, logs, and visual outputs.",
     )
 
-    parser.add_argument("--batch_size", type=int, default=8, choices=[8, 16, 32, 64], help="Batch size for dataloaders.")
+    parser.add_argument("--batch_size", type=int, default=8, choices=[2, 4, 8, 16, 32, 64], help="Batch size for dataloaders.")
     parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs.")
     parser.add_argument("--lr", type=float, default=0.001, help="Initial learning rate.")
     parser.add_argument("--wd", type=float, default=1e-4, help="Weight decay.")

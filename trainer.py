@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 
 
-def train_model(model, train_loader, val_loader, device, epochs, lr, wd, out_dir):
+def train_model(model, train_loader, val_loader, device,lr, wd, epochs, out_dir):
     model = model.to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
@@ -50,6 +50,14 @@ def train_model(model, train_loader, val_loader, device, epochs, lr, wd, out_dir
             os.makedirs(out_dir, exist_ok=True)
             torch.save(model.state_dict(), os.path.join(out_dir, "best_model.pth"))
 
+        # Save training info to file
+        with open(os.path.join(out_dir, "training_log.txt"), "a") as f:
+            f.write(
+            f"Epoch {epoch + 1}/{epochs} | "
+            f"Train Loss: {train_epoch_loss:.4f} | "
+            f"Val Loss: {val_loss:.4f}\n"
+            )
+        # Also print training info to console    
         print(
             f"Epoch {epoch + 1}/{epochs} | "
             f"Train Loss: {train_epoch_loss:.4f} | "

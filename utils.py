@@ -1,12 +1,11 @@
-import os
-import time
 import random
-from pathlib import Path
+import time
 import numpy as np
+from pathlib import Path
 import torch
 
 
-def set_seed(seed: int = 42):
+def set_seed(seed: int):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -42,3 +41,16 @@ def make_session_dir(base_dir: str = "./sessions", name: str = None) -> str:
 
 def save_checkpoint(state: dict, path: str):
     torch.save(state, path)
+
+def resize_box_xyxy(box, old_w, old_h, new_w, new_h):
+    x1, y1, x2, y2 = box
+
+    scale_x = new_w / old_w
+    scale_y = new_h / old_h
+
+    x1 *= scale_x
+    y1 *= scale_y
+    x2 *= scale_x
+    y2 *= scale_y
+
+    return x1, y1, x2, y2

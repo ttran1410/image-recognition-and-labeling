@@ -1,8 +1,10 @@
+from args import get_args
 import os
 from pathlib import Path
-import torch
 from PIL import Image
+import torch
 from torchvision.transforms.functional import to_tensor
+from utils import resize_box_xyxy
 
 
 class ObjDetectionDataset(torch.utils.data.Dataset):
@@ -30,6 +32,8 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
         return p
 
     def __getitem__(self, idx):
+        args = get_args()
+
         row = self.df.iloc[idx]
 
         img_path = self._resolve(row["images"])
@@ -37,6 +41,8 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
 
         img = Image.open(img_path).convert("RGB")
         w, h = img.size
+
+        img = img.resize((args.image_size, args.image_size))  # no resizing, but ensures consistent PIL image format
         image = to_tensor(img)
 
         boxes = []
@@ -65,6 +71,7 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
                         y2 = max(0.0, min(y2, h))
                         if x2 <= x1 or y2 <= y1:
                             continue
+                        x1, y1, x2, y2 = resize_box_xyxy((x1, y1, x2, y2), w, h, args.image_size, args.image_size)
                         boxes.append([x1, y1, x2, y2])
                         # map label to project classes: background=0, object=1
                         labels.append(int(cls) + 1)
