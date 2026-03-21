@@ -1,4 +1,4 @@
-# Image Recognition & Object Labeling — Quick Start
+# Image Recognition & Object Labeling - Quick Start
 
 This repository trains a small PyTorch object detector on the provided dataset. The README contains quick setup and run commands to start training and perform a smoke test.
 
@@ -8,7 +8,7 @@ This repository trains a small PyTorch object detector on the provided dataset. 
 - **Dependencies:** see `requirements.txt`
 
 **Install**
-- Create and activate a virtual environment, then install dependencies. Platform-specific commands:
+- Create and activate a virtual environment:
 
 ```bash
 python -m venv .venv
@@ -18,18 +18,73 @@ source .venv/bin/activate
 .venv\Scripts\Activate.ps1
 # Windows CMD
 .venv\Scripts\activate.bat
-pip install --upgrade pip
+```
+
+- Upgrade `pip` first:
+
+```bash
+python -m pip install --upgrade pip
+```
+
+- Install PyTorch:
+
+GPU install (NVIDIA, recommended). If you want training to run on GPU, install a CUDA-enabled PyTorch build. Example for CUDA 12.1:
+
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+CPU-only install:
+
+```bash
+pip install torch torchvision torchaudio
+```
+
+Apple Silicon / MPS install:
+
+```bash
+pip install torch torchvision torchaudio
+```
+
+Use `--device mps` to force Apple Metal, or `--device auto` to let the script pick `mps` when CUDA is unavailable and MPS is available.
+
+- Install the remaining project dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-Alternatively, using `conda`:
+- Verify that PyTorch can see your GPU before training:
+
+```bash
+python -c "import torch; print(torch.__version__); print(torch.version.cuda); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no gpu detected')"
+```
+
+Expected for GPU setup:
+- `torch.version.cuda` is not `None`
+- `torch.cuda.is_available()` returns `True`
+
+Expected for MPS setup:
+
+```bash
+python -c "import torch; print(torch.__version__); print(hasattr(torch.backends, 'mps') and torch.backends.mps.is_available())"
+```
+
+- The command prints `True`
+- `python main.py ... --device auto` should report `Using device: mps`
+
+- Alternatively, using `conda`:
 
 ```bash
 conda create -n ai_proj python=3.9 -y
 conda activate ai_proj
 pip install --upgrade pip
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 pip install -r requirements.txt
 ```
+
+Note: plain `torch==...` in `requirements.txt` may install a CPU-only build on Windows, so PyTorch is documented separately here as a platform-specific dependency.
+On Apple Silicon, `torch`, `torchvision`, and `torchaudio` are typically installed from PyPI as shown above. If you hit an unsupported-op error on `mps`, rerun with `--device cpu`.
 
 **Prepare dataset**
 - If you need to regenerate CSV splits, run `data_preparation.py`. The code expects CSVs under `data/csvs` by default.
@@ -44,37 +99,29 @@ python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train_data.csv \
 
 **Full training (example)**
 
-```bash
-python main.py --epochs 20 --batch_size 4 --train_csv data/csvs/train.csv \
-  --val_csv data/csvs/val.csv --device auto --out_dir sessions/run1 --num_workers 2
-```
-
-**Resume training**
+- `--device auto` prefers CUDA, then MPS, and falls back to CPU.
+- If you want the run to fail instead of silently using CPU, use `--device cuda`.
 
 ```bash
-python main.py --resume sessions/run1/checkpoint_last.pth --epochs 30
+python main.py --epochs 4 --batch_size 8 --train_csv data/csvs/train_data.csv \
+  --val_csv data/csvs/val_data.csv --device auto --out_dir sessions/run1 --num_workers 0
 ```
 
-**Evaluation**
-
-Run the evaluation script on a test CSV using a saved checkpoint (best or last). This will compute basic detection metrics and optionally save visualizations.
+GPU smoke test:
 
 ```bash
-python evaluate.py --test_csv data/csvs/test.csv --resume sessions/run1/checkpoint_best.pth \
-  --device cpu --out_dir sessions/eval_run --score_thresh 0.5 --visualize --num_workers 0
+python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train_data.csv \
+  --val_csv data/csvs/val_data.csv --device cuda --out_dir sessions/gpu_smoke_test --num_workers 0
 ```
-
-The script writes a `metrics.json` file and (if `--visualize`) prediction images under the specified `--out_dir`.
 
 **Common options**
 - **--device:** `auto`, `cpu`, or `cuda`. Use `auto` to prefer GPU if available.
-- **--batch_size:** keep small (2–8) for limited GPU memory.
+- **--batch_size:** keep small (8-64) for limited GPU memory.
 - **--num_workers:** number of dataloader workers (0 on Windows if issues occur).
-- **--score_thresh:** prediction score threshold for visualization (default 0.5).
-- **--visualize:** add this flag to save prediction visualizations (when implemented).
 
 **Outputs**
-- Checkpoints and session data are saved under the directory specified by `--out_dir` (default `./sessions`). The trainer writes `checkpoint_last.pth` and `checkpoint_best.pth`.
+- Checkpoints and session data are saved under the directory specified by `--out_dir` (default `./sessions`).
+- The trainer currently writes `best_model.pth`.
 
 **Key files**
 - Source and helpers:
@@ -84,6 +131,3 @@ The script writes a `metrics.json` file and (if `--visualize`) prediction images
   - [utils.py](utils.py)
   - [trainer.py](trainer.py)
   - [main.py](main.py)
-
-**Notes & next steps**
-- `evaluate.py` is implemented and computes TP/FP/FN, precision, recall, F1 and mean IoU; visualizations are optional via `--visualize`.

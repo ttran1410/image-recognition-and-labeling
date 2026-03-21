@@ -5,9 +5,8 @@ from torch.utils.data import DataLoader
 from dataset import ObjDetectionDataset
 from model import build_model
 import os
-from pathlib import Path
 from utils import set_seed, select_device, make_session_dir
-from trainer import Trainer
+from trainer import train_model
 
 def collate(batch):
     images, targets = zip(*batch)
@@ -17,6 +16,7 @@ def main():
     args = get_args()
     # seed and device
     set_seed(args.seed)
+
     # 1. Read the dataset (prefer explicit CSV paths when provided)
     train_csv = args.train_csv if hasattr(args, "train_csv") and args.train_csv else os.path.join(args.csv_dir, "train.csv")
     val_csv = args.val_csv if hasattr(args, "val_csv") and args.val_csv else os.path.join(args.csv_dir, "val.csv")
@@ -32,6 +32,7 @@ def main():
         shuffle=True,
         collate_fn=collate,
         num_workers=getattr(args, "num_workers", 0),
+        pin_memory=torch.cuda.is_available(),
     )
     val_dl = DataLoader(
         val_ds,
@@ -39,25 +40,36 @@ def main():
         shuffle=False,
         collate_fn=collate,
         num_workers=getattr(args, "num_workers", 0),
+        pin_memory=torch.cuda.is_available(),
     )
-    
-    #4. Init the model
-    # device selection
-    if args.device == "auto":
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    #images, targets = next(iter(train_dl))
+
+    #4. Init the model and move to device
+    device_t = select_device(args.device)
+    if device_t.type == "cuda":
+        device_msg = f"{device_t} ({torch.cuda.get_device_name(device_t)})"
     else:
-        device = args.device
+        device_msg = str(device_t)
+    print(f"Using device: {device_msg}")
 
     model = build_model(args.backbone, num_classes=2)
-    device_t = select_device(args.device)
     model.to(device_t)
 
     # create session dir
     session_dir = make_session_dir(args.out_dir)
 
-    # Trainer
-    trainer = Trainer(model, args, device_t, out_dir=session_dir)
-    trainer.train(train_dl, val_dl)
+    args.out_dir = session_dir
+    train_model(
+        model,
+        train_dl,
+        val_dl,
+        device_t,
+        epochs=args.epochs,
+        lr=args.lr,
+        wd=args.wd,
+        out_dir=args.out_dir,
+    )
 
 if __name__ == "__main__":
     main()    
