@@ -97,21 +97,21 @@ python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train_data.csv \
   --val_csv data/csvs/val_data.csv --device cpu --out_dir sessions/smoke_test --num_workers 0
 ```
 
+- GPU smoke test:
+
+```bash
+python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train_data.csv \
+  --val_csv data/csvs/val_data.csv --device cuda --out_dir sessions/gpu_smoke_test --num_workers 0
+```
+
 **Full training (example)**
 
 - `--device auto` prefers CUDA, then MPS, and falls back to CPU.
 - If you want the run to fail instead of silently using CPU, use `--device cuda`.
 
 ```bash
-python main.py --epochs 4 --batch_size 8 --train_csv data/csvs/train_data.csv \
-  --val_csv data/csvs/val_data.csv --device auto --out_dir sessions/run1 --num_workers 0
-```
-
-GPU smoke test:
-
-```bash
-python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train_data.csv \
-  --val_csv data/csvs/val_data.csv --device cuda --out_dir sessions/gpu_smoke_test --num_workers 0
+python main.py --epochs 10 --batch_size 8 --train_csv data/csvs/train_data.csv \
+  --val_csv data/csvs/val_data.csv --device auto --out_dir sessions/run1 --num_workers 8
 ```
 
 **Common options**
@@ -122,6 +122,7 @@ python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train_data.csv \
 **Outputs**
 - Checkpoints and session data are saved under the directory specified by `--out_dir` (default `./sessions`).
 - The trainer currently writes `best_model.pth`.
+- Each finished training run also writes `training_log.txt` and `learning_curve.png` in the session folder.
 
 **Key files**
 - Source and helpers:

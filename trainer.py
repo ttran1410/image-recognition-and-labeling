@@ -1,6 +1,7 @@
 import os
 import torch
 import torch.optim as optim
+from plot_learning_curve import save_learning_curve
 
 
 def train_model(model, train_loader, val_loader, device,lr, wd, epochs, out_dir):
@@ -8,6 +9,7 @@ def train_model(model, train_loader, val_loader, device,lr, wd, epochs, out_dir)
 
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=wd)
     best_val_loss = float("inf")
+    history = []
 
     for epoch in range(epochs):
         model.train()
@@ -44,6 +46,13 @@ def train_model(model, train_loader, val_loader, device,lr, wd, epochs, out_dir)
             train_epoch_loss = float("inf")
 
         val_loss = validate_model(model, val_loader, device)
+        history.append(
+            {
+                "epoch": epoch + 1,
+                "train_loss": train_epoch_loss,
+                "val_loss": val_loss,
+            }
+        )
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -51,6 +60,7 @@ def train_model(model, train_loader, val_loader, device,lr, wd, epochs, out_dir)
             torch.save(model.state_dict(), os.path.join(out_dir, "best_model.pth"))
 
         # Save training info to file
+        os.makedirs(out_dir, exist_ok=True)
         with open(os.path.join(out_dir, "training_log.txt"), "a") as f:
             f.write(
             f"Epoch {epoch + 1}/{epochs} | "
@@ -64,6 +74,13 @@ def train_model(model, train_loader, val_loader, device,lr, wd, epochs, out_dir)
             f"Val Loss: {val_loss:.4f}"
         )
 
+    if history:
+        save_learning_curve(
+            epochs=[entry["epoch"] for entry in history],
+            train_losses=[entry["train_loss"] for entry in history],
+            val_losses=[entry["val_loss"] for entry in history],
+            output_path=os.path.join(out_dir, "learning_curve.png"),
+        )
 
 def validate_model(model, val_loader, device):
     was_training = model.training

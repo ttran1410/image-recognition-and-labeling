@@ -23,8 +23,8 @@ def main():
     train_df = pd.read_csv(train_csv)
     val_df = pd.read_csv(val_csv)
     # 2. Create the dataset and dataloader
-    train_ds = ObjDetectionDataset(train_df)
-    val_ds = ObjDetectionDataset(val_df)
+    train_ds = ObjDetectionDataset(train_df, image_size=args.image_size)
+    val_ds = ObjDetectionDataset(val_df, image_size=args.image_size)
     # 3. create dataloader
     train_dl = DataLoader(
         train_ds,
