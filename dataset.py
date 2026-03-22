@@ -8,8 +8,9 @@ from utils import resize_box_xyxy
 
 
 class ObjDetectionDataset(torch.utils.data.Dataset):
-    def __init__(self, df, transforms=None, base_dir=None):
+    def __init__(self, df, image_size, transforms=None, base_dir=None):
         self.df = df.reset_index(drop=True)
+        self.image_size = image_size
         self.transforms = transforms
         # Base directory to resolve relative image/label paths. Defaults to cwd.
         self.base_dir = Path(base_dir) if base_dir is not None else Path.cwd()
@@ -42,7 +43,7 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
         img = Image.open(img_path).convert("RGB")
         w, h = img.size
 
-        img = img.resize((args.image_size, args.image_size))  # no resizing, but ensures consistent PIL image format
+        img = img.resize((self.image_size, self.image_size))  # no resizing, but ensures consistent PIL image format
         image = to_tensor(img)
 
         boxes = []
@@ -71,7 +72,7 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
                         y2 = max(0.0, min(y2, h))
                         if x2 <= x1 or y2 <= y1:
                             continue
-                        x1, y1, x2, y2 = resize_box_xyxy((x1, y1, x2, y2), w, h, args.image_size, args.image_size)
+                        x1, y1, x2, y2 = resize_box_xyxy((x1, y1, x2, y2), w, h, self.image_size, self.image_size)
                         boxes.append([x1, y1, x2, y2])
                         # map label to project classes: background=0, object=1
                         labels.append(int(cls) + 1)
