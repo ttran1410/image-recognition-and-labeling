@@ -33,8 +33,6 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
         return p
 
     def __getitem__(self, idx):
-        args = get_args()
-
         row = self.df.iloc[idx]
 
         img_path = self._resolve(row["images"])
@@ -87,7 +85,9 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
             boxes_t = torch.tensor(boxes, dtype=torch.float32)
             labels_t = torch.tensor(labels, dtype=torch.int64)
 
+        # area of each box (width * height). Used by COCO-style evaluators/metrics.
         areas = (boxes_t[:, 3] - boxes_t[:, 1]) * (boxes_t[:, 2] - boxes_t[:, 0]) if boxes_t.shape[0] > 0 else torch.zeros((0,))
+        # iscrowd flag per box (0 = not crowd, 1 = crowd). Affects matching/evaluation.
         iscrowd = torch.zeros((boxes_t.shape[0],), dtype=torch.int64)
 
         target = {
