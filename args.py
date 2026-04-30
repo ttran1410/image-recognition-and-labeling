@@ -53,7 +53,7 @@ def get_args():
         "--batch_size", 
         type=int, 
         default=8, 
-        choices=[2, 4, 8, 16, 32, 64], 
+        choices=[2, 4, 8, 10, 16, 32, 64], 
         help="Batch size for dataloaders."
     )
     parser.add_argument(
@@ -65,7 +65,7 @@ def get_args():
     parser.add_argument(
         "--lr", 
         type=float, 
-        default=0.001, 
+        default=0.0001, 
         help="Initial learning rate."
     )
     parser.add_argument(

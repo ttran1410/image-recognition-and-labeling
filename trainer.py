@@ -2,6 +2,7 @@ import os
 import torch
 import torch.optim as optim
 from plot_learning_curve import save_learning_curve
+from utils import show_batch
 
 
 def train_model(model, train_loader, val_loader, device,lr, wd, epochs, out_dir):
@@ -16,6 +17,7 @@ def train_model(model, train_loader, val_loader, device,lr, wd, epochs, out_dir)
         running_loss = 0.0
 
         for images, targets in train_loader:
+            #print(len(train_loader.dataset))
             images = [img.to(device=device, dtype=torch.float32) for img in images]
             targets = [
                 {
@@ -25,6 +27,7 @@ def train_model(model, train_loader, val_loader, device,lr, wd, epochs, out_dir)
                 for t in targets
             ]
 
+            #show_batch(images, targets)
             optimizer.zero_grad()
 
             loss_dict = model(images, targets)

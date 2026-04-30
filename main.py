@@ -1,4 +1,5 @@
 from args import get_args
+from augmentations import build_train_transforms, build_val_transforms
 from dataset import ObjDetectionDataset
 import pandas as pd
 from model import build_model
@@ -14,8 +15,8 @@ def collate(batch):
 
 def main():
     args = get_args()
-    # seed and device
-    set_seed(args.seed)
+    # seed
+    #set_seed(args.seed)
 
     # 1. Read the dataset (prefer explicit CSV paths when provided)
     train_csv = args.train_csv if hasattr(args, "train_csv") and args.train_csv else os.path.join(args.csv_dir, "train_data.csv")
@@ -23,8 +24,16 @@ def main():
     train_df = pd.read_csv(train_csv)
     val_df = pd.read_csv(val_csv)
     # 2. Create the dataset and dataloader
-    train_ds = ObjDetectionDataset(train_df, image_size=args.image_size)
-    val_ds = ObjDetectionDataset(val_df, image_size=args.image_size)
+    train_ds = ObjDetectionDataset(
+        train_df,
+        image_size=args.image_size,
+        transforms=build_train_transforms(args.image_size),
+    )
+    val_ds = ObjDetectionDataset(
+        val_df,
+        image_size=args.image_size,
+        transforms=build_val_transforms(args.image_size),
+    )
     # 3. create dataloader
     train_dl = DataLoader(
         train_ds,
@@ -32,7 +41,7 @@ def main():
         shuffle=True,
         collate_fn=collate,
         num_workers=args.num_workers,
-        pin_memory=torch.cuda.is_available(),
+        pin_memory=False,
     )
     val_dl = DataLoader(
         val_ds,
@@ -40,7 +49,7 @@ def main():
         shuffle=False,
         collate_fn=collate,
         num_workers=args.num_workers,
-        pin_memory=torch.cuda.is_available(),
+        pin_memory=False,
     )
 
     #images, targets = next(iter(train_dl))

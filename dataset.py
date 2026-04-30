@@ -1,17 +1,21 @@
 from args import get_args
 import os
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageOps
 import torch
 from torchvision.transforms.functional import to_tensor
 from utils import resize_box_xyxy
+import augmentations as aug
 
 
 class ObjDetectionDataset(torch.utils.data.Dataset):
     def __init__(self, df, image_size, transforms=None, base_dir=None):
         self.df = df.reset_index(drop=True)
         self.image_size = image_size
-        self.transforms = transforms
+        if transforms is None:
+            self.transforms = aug.NoTransform()
+        else:
+            self.transforms = aug.Compose(transforms)
         # Base directory to resolve relative image/label paths. Defaults to cwd.
         self.base_dir = Path(base_dir) if base_dir is not None else Path.cwd()
 
@@ -39,6 +43,7 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
         lbl_path = self._resolve(row["labels"]) if "labels" in row else ""
 
         img = Image.open(img_path).convert("RGB")
+        img = ImageOps.exif_transpose(img)  # handle EXIF orientation if present
         w, h = img.size
 
         img = img.resize((self.image_size, self.image_size))  # no resizing, but ensures consistent PIL image format
@@ -98,7 +103,6 @@ class ObjDetectionDataset(torch.utils.data.Dataset):
             "iscrowd": iscrowd,
         }
 
-        if self.transforms is not None:
-            image, target = self.transforms(image, target)
+        image, target = self.transforms(image, target)
 
         return image, target

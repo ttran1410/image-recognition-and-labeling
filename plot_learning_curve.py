@@ -1,10 +1,6 @@
 from pathlib import Path
-
-import matplotlib
-
-matplotlib.use("Agg")
-
 import matplotlib.pyplot as plt
+
 
 
 def save_learning_curve(epochs, train_losses, val_losses, output_path):
