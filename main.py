@@ -1,4 +1,4 @@
-from args import get_args
+from args import parse_training_args
 from augmentations import build_train_transforms, build_val_transforms
 from dataset import ObjDetectionDataset
 import pandas as pd
@@ -13,14 +13,35 @@ def collate(batch):
     images, targets = zip(*batch)
     return list(images), list(targets)
 
+def resolve_split_csv(preferred_path, csv_dir, default_name, legacy_name=None):
+    default_candidate = os.path.join(csv_dir, default_name)
+    legacy_candidate = os.path.join(csv_dir, legacy_name) if legacy_name is not None else None
+
+    if preferred_path:
+        if os.path.exists(preferred_path):
+            return preferred_path
+        preferred_norm = os.path.normpath(os.path.abspath(preferred_path))
+        allowed_norms = {os.path.normpath(os.path.abspath(default_candidate))}
+        if legacy_candidate is not None:
+            allowed_norms.add(os.path.normpath(os.path.abspath(legacy_candidate)))
+        if preferred_norm not in allowed_norms:
+            raise FileNotFoundError(f"CSV file not found: {preferred_path}")
+
+    if os.path.exists(default_candidate):
+        return default_candidate
+
+    if legacy_candidate is not None and os.path.exists(legacy_candidate):
+        return legacy_candidate
+
+    raise FileNotFoundError(f"CSV file not found: {default_candidate}")
+
 def main():
-    args = get_args()
-    # seed
-    #set_seed(args.seed)
+    args = parse_training_args()
+    set_seed(args.seed)
 
     # 1. Read the dataset (prefer explicit CSV paths when provided)
-    train_csv = args.train_csv if hasattr(args, "train_csv") and args.train_csv else os.path.join(args.csv_dir, "train_data.csv")
-    val_csv = args.val_csv if hasattr(args, "val_csv") and args.val_csv else os.path.join(args.csv_dir, "val_data.csv")
+    train_csv = resolve_split_csv(args.train_csv, args.csv_dir, "train.csv", "train_data.csv")
+    val_csv = resolve_split_csv(args.val_csv, args.csv_dir, "val.csv", "val_data.csv")
     train_df = pd.read_csv(train_csv)
     val_df = pd.read_csv(val_csv)
     # 2. Create the dataset and dataloader

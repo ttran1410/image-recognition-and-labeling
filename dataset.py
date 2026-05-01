@@ -1,4 +1,3 @@
-from args import get_args
 import os
 from pathlib import Path
 from PIL import Image, ImageOps

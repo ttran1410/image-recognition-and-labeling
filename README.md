@@ -1,6 +1,6 @@
 # Image Recognition & Object Labeling - Quick Start
 
-This repository trains a small PyTorch object detector on the provided dataset. The README contains quick setup and run commands to start training and perform a smoke test.
+This repository contains a modular PyTorch object detection pipeline with separate training and evaluation entry points. The README covers setup, dataset preparation, training, and the final evaluation demo.
 
 **Prerequisites**
 - **Python:** 3.8+ recommended
@@ -76,21 +76,25 @@ python -c "import torch; print(torch.__version__); print(hasattr(torch.backends,
 On Apple Silicon, `torch`, `torchvision`, and `torchaudio` are typically installed from PyPI as shown above. If you hit an unsupported-op error on `mps`, rerun with `--device cpu`.
 
 **Prepare dataset**
-- If you need to regenerate CSV splits, run `data_preparation.py`. The code expects CSVs under `data/csvs` by default.
+- If you need to regenerate CSV splits, run `data_preparation.py`.
+- The script writes `dataset.csv`, `train.csv`, `val.csv`, and `test.csv` under `data/csvs`.
+- The split is deterministic and uses a fixed seed.
+- The current split is approximately `70%` train, `15%` validation, and `15%` test.
+- The `test.csv` split is intended to stay untouched until the final evaluation demo.
 
 **Smoke test (recommended first run)**
 - Runs a single epoch on CPU with a very small batch to verify end-to-end behavior and checkpoint saving.
 
 ```bash
-python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train_data.csv \
-  --val_csv data/csvs/val_data.csv --device cpu --out_dir sessions/smoke_test --num_workers 0
+python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train.csv \
+  --val_csv data/csvs/val.csv --device cpu --out_dir sessions/smoke_test --num_workers 0
 ```
 
 - GPU smoke test:
 
 ```bash
-python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train_data.csv \
-  --val_csv data/csvs/val_data.csv --device cuda --out_dir sessions/gpu_smoke_test --num_workers 0
+python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train.csv \
+  --val_csv data/csvs/val.csv --device cuda --out_dir sessions/gpu_smoke_test --num_workers 0
 ```
 
 **Full training (example)**
@@ -99,25 +103,41 @@ python main.py --epochs 1 --batch_size 2 --train_csv data/csvs/train_data.csv \
 - If you want the run to fail instead of silently using CPU, use `--device cuda`.
 
 ```bash
-python main.py --epochs 10 --batch_size 8 --train_csv data/csvs/train_data.csv \
-  --val_csv data/csvs/val_data.csv --device auto --out_dir sessions/run1 --num_workers 8
+python main.py --epochs 10 --batch_size 8 --train_csv data/csvs/train.csv \
+  --val_csv data/csvs/val.csv --device auto --out_dir sessions/run1 --num_workers 8
 ```
 
 **Common options**
-- **--device:** `auto`, `cpu`, or `cuda`. Use `auto` to prefer GPU if available.
+- **--device:** `auto`, `cpu`, `cuda`, or `mps`. Use `auto` to prefer the best available device.
 - **--batch_size:** keep small (8-64) for limited GPU memory.
 - **--num_workers:** number of dataloader workers (0 on Windows if issues occur).
+- **--out_dir / --output_dir:** where checkpoints, logs, and visual outputs are saved.
 
 **Outputs**
 - Checkpoints and session data are saved under the directory specified by `--out_dir` (default `./sessions`).
 - The trainer currently writes `best_model.pth`.
 - Each finished training run also writes `training_log.txt` and `learning_curve.png` in the session folder.
+- Final evaluation writes annotated prediction images and a contact sheet into `evaluation_outputs/` inside the session folder.
+
+**Final evaluation**
+
+Run the separate evaluation script on the untouched test split after training:
+
+```bash
+python evaluate.py --checkpoint sessions/run1/best_model.pth --test_csv data/csvs/test.csv \
+  --device auto --max_images 10
+```
+
+This saves annotated predictions to `sessions/run1/evaluation_outputs/` by default, along with a contact sheet for quick review.
 
 **Key files**
 - Source and helpers:
   - [args.py](args.py)
+  - [data_preparation.py](data_preparation.py)
   - [dataset.py](dataset.py)
+  - [evaluate.py](evaluate.py)
   - [model.py](model.py)
+  - [plot_learning_curve.py](plot_learning_curve.py)
   - [utils.py](utils.py)
   - [trainer.py](trainer.py)
   - [main.py](main.py)
